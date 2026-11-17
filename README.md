@@ -37,6 +37,7 @@ This repo is my daily log. Each `dayNN` folder holds that day's sketches, one fo
 | 17–18 | Pointers: printing variable addresses (& and *), addresses inside an array 4 bytes apart and the garbage one slot past the end, swapping two variables through pointers vs. by copy, and a readKnob() function that "returns" two values (raw ADC and brightness) through pointers | [pointer-basics](day17/pointer-basics), [array-addresses](day17/array-addresses), [swap-values](day17/swap-values), [read-knob](day17/read-knob) |
 | 19 | Pointers and arrays: an array name is the address of its first element, `p + 1` moves one element (4 bytes for `int`, 1 for `byte`), `sizeof` gives 12 for the array but 4 inside a function (just the address); filling an array of 8 ADC samples and averaging it through functions that take a pointer + count; pointer drills: clamp a variable in place, split milliseconds into minutes and seconds, add a number to every element | [array-steps](day19/array-steps), [pot-average](day19/pot-average), [clamp-value](day19/clamp-value), [split-time](day19/split-time), [add-to-all](day19/add-to-all) |
 | 19 | Structs: one `Led` struct (pin, last toggle time, on/off, interval) for 3 LEDs blinking at different speeds with millis, then an `updateLed(Led*)` function using `->`. Hardware: RC low-pass filter turning PWM into a steady voltage, ripple measured with the ADC for no cap / 100 nF / 1 µF / 10 µF (3029 → 60 mV), schematic in KiCad | [struct-blink](day19/struct-blink), [struct-blink-function](day19/struct-blink-function), [rc-ripple](day19/rc-ripple), [rc-filter schematic](day19/rc-filter-kicad/rc-filter.pdf) |
+| 20 | Project: night light with 3 modes (off / on / auto) on one button. In ON the pot sets brightness with gamma correction (`(x/255)^2.2 * 255`) so the knob feels even to the eye; the last brightness is remembered. In AUTO the pot stands in for a light sensor with hysteresis (on below 1200, off above 1500) so it never flickers. All settings live in one `NightLight` struct, and the auto logic takes a `NightLight*` | [night-light](day20/night-light) |
 
 ## Side projects
 
@@ -55,6 +56,8 @@ Arduino UNO, breadboard, red/green/blue 5 mm LEDs, resistors (E12), 10k potentio
 
 - Inside a function that takes a struct pointer, use `p->field`, not `p.field`.
 - A bigger capacitor in an RC filter means less ripple but a slower response (τ = R × C).
+- `x % 3` with `x < 3` is just `x`. To cycle 0,1,2,0 write `(mode + 1) % 3`, brackets first.
+- A pin that only reacts at the moment a button is pressed never updates again: handle the press and the output in separate blocks.
 - `7 / 60` is `0` in C: integer division. Write `7.0 / 60`.
 - Global counters keep their value between `loop()` runs, so reset them.
 - A button needs **edge detection** (act only when it changes from released to pressed) and a short **debounce** delay.
