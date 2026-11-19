@@ -38,6 +38,7 @@ This repo is my daily log. Each `dayNN` folder holds that day's sketches, one fo
 | 19 | Pointers and arrays: an array name is the address of its first element, `p + 1` moves one element (4 bytes for `int`, 1 for `byte`), `sizeof` gives 12 for the array but 4 inside a function (just the address); filling an array of 8 ADC samples and averaging it through functions that take a pointer + count; pointer drills: clamp a variable in place, split milliseconds into minutes and seconds, add a number to every element | [array-steps](day19/array-steps), [pot-average](day19/pot-average), [clamp-value](day19/clamp-value), [split-time](day19/split-time), [add-to-all](day19/add-to-all) |
 | 19 | Structs: one `Led` struct (pin, last toggle time, on/off, interval) for 3 LEDs blinking at different speeds with millis, then an `updateLed(Led*)` function using `->`. Hardware: RC low-pass filter turning PWM into a steady voltage, ripple measured with the ADC for no cap / 100 nF / 1 µF / 10 µF (3029 → 60 mV), schematic in KiCad | [struct-blink](day19/struct-blink), [struct-blink-function](day19/struct-blink-function), [rc-ripple](day19/rc-ripple), [rc-filter schematic](day19/rc-filter-kicad/rc-filter.pdf) |
 | 20 | Project: night light with 3 modes (off / on / auto) on one button. In ON the pot sets brightness with gamma correction (`(x/255)^2.2 * 255`) so the knob feels even to the eye; the last brightness is remembered. In AUTO the pot stands in for a light sensor with hysteresis (on below 1200, off above 1500) so it never flickers. All settings live in one `NightLight` struct, and the auto logic takes a `NightLight*`. Schematic in KiCad (LED + 220 Ω on GPIO18, button to GND with internal pull-up on GPIO4, 10k pot on GPIO34) | [night-light](day20/night-light), [night-light schematic](day20/night-light-kicad/nightlight.pdf) |
+| 22 | Splitting a sketch into files: `.h` = the menu (struct, constants, function prototypes, `#pragma once`), `.cpp` = the kitchen (function bodies, `#include <Arduino.h>`). The night light split into `NightLight.h/.cpp` with functions taking a `NightLight*`, plus a reusable debounced `Button` module (`Button.h/.cpp`) dropped unchanged into a press counter. Compile vs linker errors, why `#define` is risky (`SQUARE(1 + 2)` = 5). Hardware: diode-mode Vf of red/yellow/green LEDs (1.76 / 1.82 / 1.84 V), why a drone uses a Schottky for reverse-battery protection (0.3 W vs 0.7 W lost at 1 A), Zener as a voltage clamp | [night-light-split](day22/night-light-split), [button-counter](day22/button-counter) |
 
 ## Side projects
 
@@ -54,6 +55,11 @@ Arduino UNO, breadboard, red/green/blue 5 mm LEDs, resistors (E12), 10k potentio
 
 ## Things I learned the hard way
 
+- Plain global variables never go in a `.h`: every file that includes it gets its own copy, and the linker fails with "multiple definition". `const` values are fine.
+- A function prototype in the `.h` must match the body in the `.cpp` exactly. `setLedLevel(int)` and `setLedLevel(float)` are two different functions in C++, so a mismatch gives "undefined reference" from the linker.
+- Compile errors ("not declared", "does not name a type") come from one file at a time; linker errors (`ld.exe`, "undefined reference", "multiple definition") only show up when all files are joined.
+- `#define` is blind text replacement: `#define LED_PIN 18;` pastes the `;` too. Prefer `const int`.
+- Keep sketches outside OneDrive: sync made the editor and the file on disk disagree.
 - Inside a function that takes a struct pointer, use `p->field`, not `p.field`.
 - A bigger capacitor in an RC filter means less ripple but a slower response (τ = R × C).
 - `x % 3` with `x < 3` is just `x`. To cycle 0,1,2,0 write `(mode + 1) % 3`, brackets first.

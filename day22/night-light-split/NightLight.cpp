@@ -1,0 +1,49 @@
+#include "NightLight.h"
+
+float applyGamma(float targetBrightness) {
+  float pwmValue = (pow((targetBrightness / 255.00), 2.2)) * 255.00;
+  return pwmValue;
+}
+void autoMode(NightLight* lightPtr, int rawValue) {
+  if (rawValue > lightPtr->brightThreshold) {
+    analogWrite(lightPtr->ledPin, 0);
+    if (lightPtr->ledOn == true) { Serial.println("Led is OFF!"); }
+    lightPtr->ledOn = false;
+  } else if (rawValue < lightPtr->darkThreshold) {
+    analogWrite(lightPtr->ledPin, applyGamma(lightPtr->savedBrightness));
+    if (lightPtr->ledOn == false) { Serial.println("Led is ON!"); }
+    lightPtr->ledOn = true;
+  } else {
+    if (lightPtr->ledOn) {
+      analogWrite(lightPtr->ledPin, applyGamma(lightPtr->savedBrightness));
+    } else {
+      analogWrite(lightPtr->ledPin, 0);
+    }
+  }
+}
+
+void ledMode(bool pressed, int pwmValue, int targetBrightness, int rawValue, NightLight* lightPtr) {
+  if (pressed) {
+    lightPtr->mode = (lightPtr->mode + 1) % 3;
+    if (lightPtr->mode == MODE_OFF) {
+      Serial.println("MODE: OFF");
+    } else if (lightPtr->mode == MODE_ON) {
+      Serial.println("MODE: ON");
+      lightPtr->ledOn = true;
+    } else if (lightPtr->mode == MODE_AUTO) {
+      Serial.println("MODE: AUTO");
+    }
+  }
+  if (lightPtr->mode == MODE_OFF) {
+    analogWrite(lightPtr->ledPin, 0);
+  } else if (lightPtr->mode == MODE_ON) {
+    setLedBrightness(pwmValue, lightPtr);
+    lightPtr->savedBrightness = targetBrightness;
+  } else if (lightPtr->mode == MODE_AUTO) {
+    autoMode(lightPtr, rawValue);
+  }
+}
+
+void setLedBrightness(float pwmValue, NightLight* lightPtr) {
+  analogWrite(lightPtr->ledPin, pwmValue);
+}
