@@ -6,7 +6,8 @@
 //              Button -> DISARMED (cancel), after 10 s -> ARMED
 //   ARMED    : yellow LED on, silent. Motion -> ALARM, button -> DISARMED
 //   ALARM    : red LED blinks 100 ms, siren 1500 / 2200 Hz switching every 300 ms
-//              Keeps sounding after motion stops. Button -> DISARMED (silent at once)
+//              Button -> DISARMED (silent at once)
+//              No motion for 10 s -> ARMED (timer restarts on every motion)
 //
 // Pins:
 //   PIR     : HC-SR501 OUT -> GPIO27 (VCC -> VIN 5V), 30 s warm-up at power-on
@@ -35,8 +36,9 @@ int ledPins[] = { greenPin, yellowPin, redPin };
 int ledCount = sizeof(ledPins) / sizeof(ledPins[0]);
 
 const unsigned long armingDelay = 10000;
+const unsigned long quietDelay = 10000;
 unsigned long armingStartTime = 0;
-
+unsigned long lastMotionTime = 0;
 bool ledBlinkOn = false;
 unsigned long lastLedBlink = 0;
 unsigned long yellowLedBlinkInterval = 250;
@@ -94,8 +96,7 @@ void loop() {
       if (pressed) {
         Serial.println("State: DISARMED");
         alarmState = STATE_DISARMED;
-      }
-      else if (millis() - armingStartTime >= armingDelay) {
+      } else if (millis() - armingStartTime >= armingDelay) {
         alarmState = STATE_ARMED;
         Serial.println("State: ARMED");
       }
@@ -110,10 +111,14 @@ void loop() {
       } else if (isMotion) {
         Serial.println("MOTION! State: ALARM");
         alarmState = STATE_ALARM;
+        lastMotionTime = now;
       }
       break;
 
     case STATE_ALARM:
+      if (isMotion) {
+        lastMotionTime = now;
+      }
       if (millis() - lastLedBlink >= redLedBlinkInterval) {
         lastLedBlink = millis();
         ledBlinkOn = !ledBlinkOn;
@@ -133,6 +138,9 @@ void loop() {
       if (pressed) {
         Serial.println("State: DISARMED");
         alarmState = STATE_DISARMED;
+      } else if (millis() - lastMotionTime >= quietDelay) {
+        alarmState = STATE_ARMED;
+        Serial.println("State: ARMED");
       }
       break;
   }
